@@ -8,7 +8,6 @@ bib = CitationBibliography(joinpath(@__DIR__, "..", "CITATION.bib"))
 makedocs(;
     modules=[PortHamiltonianModelReduction],
     authors="Jonas Nicodemus <jonas.nicodemus@icloud.com> and contributors",
-    repo="https://github.com/Jonas-Nicodemus/PortHamiltonianModelReduction.jl/blob/{commit}{path}#{line}",
     sitename="PortHamiltonianModelReduction.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
