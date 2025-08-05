@@ -20,7 +20,7 @@ or
 julia> using Pkg; Pkg.add("PortHamiltonianModelReduction")
 ```
 
-For the best experience, we recommend also installing [`PortHamiltonianSystems.jl`](https://github.com/Jonas-Nicodemus/PortHamiltonianSystems.jl) and [`ControlSystems.jl`](https://github.com/JuliaControl/ControlSystems.jl). Furthermore, for accessing (pH) Benchmark systems check out [`PortHamiltonianBenchmarkSystems.jl`](https://github.com/Algopaul/PortHamiltonianBenchmarkSystems.jl).
+For the best experience, we recommend also installing [`PortHamiltonianSystems.jl`](https://github.com/Jonas-Nicodemus/PortHamiltonianSystems.jl) and [`ControlSystems.jl`](https://github.com/JuliaControl/ControlSystems.jl). Furthermore, for accessing pH benchmark systems check out [`PortHamiltonianBenchmarkSystems.jl`](https://github.com/Algopaul/PortHamiltonianBenchmarkSystems.jl).
 
 ## Documentation
 
