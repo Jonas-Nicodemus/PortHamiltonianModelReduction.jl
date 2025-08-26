@@ -58,21 +58,21 @@ function truncno(Σph::PortHamiltonianStateSpace; ϵ=1e-12)
     F = eigen(Σph.Q)
     i = findall(x->abs(x)>ϵ, F.values)
     V = F.vectors[:,i]
-    return phss(V'*Σph.J*V, V'*Σph.R*V, V'*Σph.Q*V, V'*Σph.G, V'*Σph.P, Σph.S, Σph.N)  
+    return phss(skewhermitian(V'*Σph.J*V), hermitianpart(V'*Σph.R*V), hermitianpart(V'*Σph.Q*V), V'*Σph.G, V'*Σph.P, Σph.S, Σph.N)
 end
 
 function truncnc(Σph::PortHamiltonianStateSpace; ϵ=1e-12)
     L = cholesky(Σph.Q).L
-    
-    Σph1 = phss(L'*Σph.J*L, L'*Σph.R*L, I(size(L,1)), L'*Σph.G, L'*Σph.P, Σph.S, Σph.N)
-    
+
+    Σph1 = phss(skewhermitian(L'*Σph.J*L), hermitianpart(L'*Σph.R*L), I(size(L,1)), L'*Σph.G, L'*Σph.P, Σph.S, Σph.N)
+
     P = gram(Σph1, :c)
     F = eigen(hermitianpart(P), sortby=-)
     i = findall(x->x>ϵ, F.values)
     r = length(i)
     V = F.vectors[:,i]
     
-    return phss(V'*Σph1.J*V, V'*Σph1.R*V, I(r), V'*Σph1.G, V'*Σph1.P, Σph.S, Σph.N)
+    return phss(skewhermitian(V'*Σph1.J*V), hermitianpart(V'*Σph1.R*V), I(r), V'*Σph1.G, V'*Σph1.P, Σph.S, Σph.N)
 end
 
 """
