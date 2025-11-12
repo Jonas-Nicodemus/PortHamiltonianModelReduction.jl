@@ -45,15 +45,11 @@ function tddata(res::SimResult, mask::AbstractVector, noise::Float64=0.0)
     Ẋ = res.sys.A * X + res.sys.B * U
 
     if noise > 0.0
-        Ẋ = data.Ẋ + σ * randn(size(data.Ẋ))
-        X = data.X + σ * randn(size(data.X))
-        U = data.U
-        Y = data.Y + σ * randn(size(data.Y))
+        Ẋ = Ẋ + noise * randn(size(Ẋ))
+        X = X + noise * randn(size(X))
+        U = U + noise * randn(size(U))
+        Y = Y + noise * randn(size(Y))
     end
 
     return TimeDomainData(Ẋ, X, U, Y, Array(t))
-end
-
-function tddata(data::TimeDomainData, mask::AbstractVector)
-    return TimeDomainData(data.Ẋ[:,mask], data.X[:,mask], data.U[:,mask], data.Y[:,mask], data.t[mask])
 end
