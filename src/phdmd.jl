@@ -6,7 +6,7 @@ The error of the OpInf problem is returned as `res`.
 The data is projected using with the matrix `Wr`, which is typically a POD basis.
 """
 function opinf(data::TimeDomainData, Wr::Matrix)
-    return opinf(pod(data, Wr))
+    return opinf(pgprojection(data, Wr))
 end
 
 function opinf(data::TimeDomainData)
@@ -30,32 +30,34 @@ end
 Returns the POD basis via the truncated singular value decomposition of a data matrix `X`.
 Alternatively, it can be cast on a `F::SVD` object, such that the SVD is not recomputed.
 """    
-function podbasis(args...; kwargs...)
+function pod(args...; kwargs...)
     F = tsvd(args...; kwargs...)
     return F.U
 end
 
 """
-    Σr = pod(Σ, X, r)
-    Σr = pod(Σ, V, W)
+    Σr = podg(Σ, X, r)
+    Σr = podg(Σ, F, r)
+    Σr = podg(Σ, V)
+    Σr = podpg(Σ, V, W)
 
 Returns a ROM `Σr` of size `r` for the system `Σ` using the POD (Petrov-)Galerkin method.
 """
-function pod(Σ, X, r)
-    Vr = podbasis(X, r)
-    return pod(Σ, Vr)
+function podg(Σ, X, r)
+    Vr = pod(X, r)
+    return podg(Σ, Vr)
 end
 
-function pod(Σph::PortHamiltonianStateSpace, V::Matrix)
-    return pgprojection(Σph, V)
+function podg(Σ::StateSpace, V::Matrix)
+    return pgprojection(Σ, V, V)
 end
 
-function pod(Σ::StateSpace, V::Matrix, W::Matrix=V)
+function podpg(Σph::PortHamiltonianStateSpace, V::Matrix)
+    return pgprojection(Σph, V, Σph.Q * V / (V' * Σph.Q * V))
+end
+
+function podpg(Σ::StateSpace, V::Matrix, W::Matrix)
     return pgprojection(Σ, V, W) 
-end
-
-function pod(data::TimeDomainData, W::Matrix)
-    return tddata(W' * data.Ẋ, W' * data.X, data.U, data.Y, data.t)
 end
 
 """

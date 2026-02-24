@@ -26,10 +26,24 @@ using PortHamiltonianSystems, OrdinaryDiffEq
 
     @testset "pod" begin
         r = 1
+        Σr1 = podg(Σ, data.X, r) 
+        @test Σr1.nx == r
+        @test norm(Σ - Σr1, Inf) < 1e1
 
-        Σr = pod(Σ, data.X, r) 
-        @test Σr.nx == r
-        @test norm(Σ - Σr, Inf) < 1e1
+        F = svd(data.X)
+        Σr2 = podg(Σ, F, r) 
+        @test Σr2.nx == r
+        @test norm(Σ - Σr2, Inf) < 1e1
+
+        Vr = pod(data.X, r)
+        Wr = Q * Vr / (Vr' * Q * Vr)
+        Σr3 = podg(Σ, Vr)
+        @test Σr3.nx == r
+        @test norm(Σ - Σr3, Inf) < 1e1
+
+        Σr4 = podpg(Σ, Vr, Wr)
+        @test Σr4.nx == r
+        @test norm(Σ - Σr4, Inf) < 1e1
     end
 
     @testset "opinf" begin
@@ -37,10 +51,10 @@ using PortHamiltonianSystems, OrdinaryDiffEq
         @test norm(Σ - Σr, Inf) < 1e-12 
 
         r = 1
-        V = PortHamiltonianModelReduction.podbasis(data.X, r)
+        V = pod(data.X, r)
         @test size(V, 2) == r
 
-        Σrpod = pod(Σ, V)
+        Σrpod = podg(Σ, V)
         Σropinf, res = opinf(data, V)
 
         @test norm(Σrpod - Σropinf, Inf) < 1e1

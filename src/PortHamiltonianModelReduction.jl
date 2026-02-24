@@ -6,7 +6,7 @@ using Optim, LineSearches, JuMP, Hypatia, COSMO
 using PortHamiltonianSystems, QuadraticOutputSystems
 
 export tddata
-export opinf, pod, datamatrices, phdmd, estimate_ham, phdmd_initial_guess, phdmd_datamatrices
+export opinf, pod, podg, podpg, datamatrices, phdmd, estimate_ham, phdmd_initial_guess, phdmd_datamatrices
 export irka, phirka, bt, prbt, passivate, klap, matchnrg, ephminreal, hdss
 export chirp, sawtooth, prbs, step # inputsignals.jl
 export pgprojection # projection.jl

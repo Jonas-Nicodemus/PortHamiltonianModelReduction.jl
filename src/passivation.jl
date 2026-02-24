@@ -182,6 +182,11 @@ function Σp(Σ, L, M=sqrt(Σ.D + Σ.D'))
     return ss(Σ.A, Σ.B, Cr(Σ, L, M), Σ.D)
 end
 
+function gap(Σ, L, M=sqrt(Σ.D + Σ.D'))
+    Σp = PortHamiltonianModelReduction.Σp(Σ, L, M)
+    return kypgap(Σp)
+end
+
 function ∇J(Σ, L, M=sqrt(Σ.D + Σ.D'), P=gram(Σ, :c))
     Cr = PortHamiltonianModelReduction.Cr(Σ, L, M) 
     Ce = Cr - Σ.C
