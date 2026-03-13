@@ -1,3 +1,5 @@
+import JuMP: value
+
 """
     Σr, res = opinf(data::TimeDomainData, Vr::Matrix)
 

@@ -2,8 +2,8 @@ using Test
 
 using PortHamiltonianModelReduction
 
-using LinearAlgebra, SkewLinearAlgebra, ControlSystemsBase
-using PortHamiltonianSystems, OrdinaryDiffEq
+using LinearAlgebra, SkewLinearAlgebra, ControlSystems
+using PortHamiltonianSystems
 
 @testset "test_phdmd.jl" begin
     J = [0. 1.; -1. 0.]
@@ -20,7 +20,9 @@ using PortHamiltonianSystems, OrdinaryDiffEq
     x0 = zeros(n)
     u_(x,t) = [exp(-0.5 * t) * sin(t^2)]
 
-    res = lsim(Σ, u_, t ;x0=x0, alg=OrdinaryDiffEq.ImplicitMidpoint(), dt=Δt)
+    # lsim for continuous-time systems needs ControlSystems 
+    # res = lsim(Σ, u_, t ;x0=x0, alg=OrdinaryDiffEq.ImplicitMidpoint(), dt=Δt)
+    res = lsim(Σ, u_, t ;x0=x0, dt=Δt)
     H = 1//2 * sum(res.x .* (Q * res.x), dims=1)[1,:]
     data = tddata(res)
 

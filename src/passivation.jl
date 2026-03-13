@@ -30,13 +30,13 @@ function klap(Σ::StateSpace, L0=L0(Σ), M=M(Σ), P=gram(Σ, :c); recycl=:schur,
     if isdiag(Σ.A)
         @info "Diagonal Σ.A detected, using specialized fg! implementation"
         Ã = diag(Σ.A) .+ diag(Σ.A)'
-        d = Optim.only_fg!((f,G,L) -> fg!(f, G, L, Σ, Diagonal(Σ.A), Ã, P, M))
+        d = NLSolversBase.only_fg!((f,G,L) -> fg!(f, G, L, Σ, Diagonal(Σ.A), Ã, P, M))
     elseif recycl == :schur
         S = schur(Σ.A)
-        d = Optim.only_fg!((f,G,L) -> fg!(f, G, L, Σ, S, P, M))
+        d = NLSolversBase.only_fg!((f,G,L) -> fg!(f, G, L, Σ, S, P, M))
     elseif recycl === nothing
         @info "No recycling method specified, using generic fg! implementation"
-        d = Optim.only_fg!((f,G,L) -> fg!(f, G, L, Σ, P, M))
+        d = NLSolversBase.only_fg!((f,G,L) -> fg!(f, G, L, Σ, P, M))
     else 
         @error "Recycling method $recycl not recognized"
     end

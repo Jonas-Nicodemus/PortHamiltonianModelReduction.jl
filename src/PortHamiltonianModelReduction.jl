@@ -2,7 +2,7 @@ module PortHamiltonianModelReduction
 
 using LinearAlgebra, SkewLinearAlgebra, VectorizationTransformations
 using ControlSystemsBase, MatrixEquations
-using Optim, LineSearches, JuMP, Hypatia, COSMO
+using NLSolversBase, Optim, LineSearches, JuMP, Hypatia, COSMO
 using PortHamiltonianSystems, QuadraticOutputSystems
 
 export tddata
