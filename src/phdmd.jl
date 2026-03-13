@@ -1,17 +1,28 @@
 """
-    Σr, res = opinf(data::TimeDomainData, Wr::Matrix)
+    Σr, res = opinf(data::TimeDomainData, Vr::Matrix)
 
-Computes a ROM `Σr` from time-domain data via operator inference (OpInf) [PW16](@cite). 
+Computes a ROM `Σr` from time-domain data via (Galerkin) operator inference (OpInf) [PW16](@cite). 
 The error of the OpInf problem is returned as `res`.
-The data is projected using with the matrix `Wr`, which is typically a POD basis.
+The data is projected via the matrix `V`, which is typically a POD basis.
 """
-function opinf(data::TimeDomainData, Wr::Matrix)
-    return opinf(pgprojection(data, Wr))
+function opinf(data::TimeDomainData, V::Matrix)
+    return opinf(pgprojection(data, V))
+end
+
+"""
+    Σr, res = pgopinf(data::TimeDomainData, Vr::Matrix, Wr::Matrix)
+
+Computes a ROM `Σr` from time-domain data via Petrov-Galerkin operator inference (PG-OpInf). 
+The error of the OpInf problem is returned as `res`.
+The data is projected via the oblique projection matrix `inv(W'V)W'` for given projection matrices `V` and `W`.
+"""
+function pgopinf(data::TimeDomainData, V::Matrix, W::Matrix)
+    return opinf(pgprojection(data, V, W))
 end
 
 function opinf(data::TimeDomainData)
     n = size(data.X, 1)
-    T, Z = datamatrices(data)
+    T, Z = opinf_datamatrices(data)
     O = Z * pinv(T)
 
     res = norm(Z - O * T)
@@ -19,7 +30,7 @@ function opinf(data::TimeDomainData)
     return ss(O[1:n, 1:n], O[1:n, n+1:end], O[n+1:end, 1:n], O[n+1:end, n+1:end]), res
 end
 
-function datamatrices(data::TimeDomainData)
+function opinf_datamatrices(data::TimeDomainData)
     return [data.X; data.U], [data.Ẋ; data.Y]
 end
 

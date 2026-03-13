@@ -14,6 +14,10 @@ function pgprojection(Σ::StateSpace, V::Matrix, W::Matrix=V)
    return ss(W' * Σ.A * V, W' * Σ.B, Σ.C * V, Σ.D)
 end
 
-function pgprojection(data::TimeDomainData, W::Matrix)
-    return tddata(W' * data.Ẋ, W' * data.X, data.U, data.Y, data.t)
+function pgprojection(data::TimeDomainData, V::Matrix)
+    return tddata(V' * data.Ẋ, V' * data.X, data.U, data.Y, data.t)
+end
+
+function pgprojection(data::TimeDomainData, V::Matrix, W::Matrix)
+    return tddata((W' * V) \ W' * data.Ẋ, (W' * V) \ W' * data.X, data.U, data.Y, data.t)
 end
