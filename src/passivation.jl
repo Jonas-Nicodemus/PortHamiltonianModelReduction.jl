@@ -3,7 +3,7 @@
 
 Passivate the system `Σ` using the method `method`. The available methods are:
 
-- `:klap`: KLAP optimization [NVGU25](@cite)
+- `:klap`: KLAP optimization [NVGU26](@cite)
 - `:lmi`: LMI optimization [GS21](@cite)
 - `:lmi_tp`: LMI optimization with trace parametrization [Dum02, CPS04](@cite)
 
@@ -24,7 +24,7 @@ end
 """
     klap(Σ::StateSpace; L0=L0(Σ), M=M(Σ), P=gram(Σ, :c); recycl=:schur, restart=false, α=1e-8, ε=1e-4, verbose=true, kwargs...) -> Σp, res
 
-Passivates a system `Σ` using KLAP [NVGU25](@cite). The optimization problem is solved using LBFGS.
+Passivates a system `Σ` using KLAP [NVGU26](@cite). The optimization problem is solved using LBFGS.
 """
 function klap(Σ::StateSpace, L0=L0(Σ), M=M(Σ), P=gram(Σ, :c); recycl=:schur, restart=false, α=1e-8, ε=1e-4, verbose=true, kwargs...)
     if isdiag(Σ.A)
@@ -89,7 +89,7 @@ end
 """
     klap_inital_guess(Σ, ΔD=0.0; ε=1e-8) -> L0, ΔD
 
-Computes an initial guess for KLAP [NVGU25](@cite). The initial guess is computed by perturbing the feedthrough matrix to achieve a passive realization.
+Computes an initial guess for KLAP [NVGU26](@cite). The initial guess is computed by perturbing the feedthrough matrix to achieve a passive realization.
 Then the perturbed system is used to compute the initial guess. The perturbation `ΔD` can be specified, otherwise it is computed using `ΔD(Σ)`.
 """
 function klap_inital_guess(Σ, ΔD=0.0; ε=1e-8)
