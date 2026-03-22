@@ -2,8 +2,10 @@ using Test
 
 using PortHamiltonianModelReduction
 
-using LinearAlgebra, VectorizationTransformations, ControlSystemsBase, FiniteDifferences
+using LinearAlgebra, VectorizationTransformations, ControlSystemsBase
+using FiniteDifferences
 using QuadraticOutputSystems, PortHamiltonianSystems
+using Optim, LineSearches, Clarabel
 
 @testset "test_energymatching.jl" begin
     
@@ -108,7 +110,7 @@ using QuadraticOutputSystems, PortHamiltonianSystems
         end
     end
 
-    @testset "test_matchnrg_sdp" begin
+    @testset "test_matchnrg" begin
         A = [-2. 1.; -1. -1.]
         B = [6.; 0;;]
         C = B'
@@ -116,14 +118,25 @@ using QuadraticOutputSystems, PortHamiltonianSystems
         Q = [1. 0.; 0. 1.]
         
         Σ = phss(ss(A, B, C, D), Q)
-        Σr = phss(ss(A[1:1,1:1], B[1:1,1:1], C[1:1,1:1], D), Q[1:1,1:1])  
-            
-        @testset "matchnrg_sdp" begin
-            for solver in [:Hypatia, :COSMO]
-                Σphr = matchnrg(Σ, Σr; solver=solver)
-                @test norm(Σphr.Q - [160/169;;]) < 1e-3
-                @test norm(hdss(Σ) - hdss(Σphr))^2 ≈ 19 + 81/4 * (160/169)^2 - 2 * 3240/169 * (160/169) atol = 1e-3
-            end
+        Σr = phss(ss(A[1:1,1:1], B[1:1,1:1], C[1:1,1:1], D), Q[1:1,1:1]) 
+
+        @testset "matchnrg" begin
+            Σphr = matchnrg(Σ, Σr; solver=Optim.BFGS(linesearch = LineSearches.BackTracking()))
+            @test norm(Σphr.Q - [160/169;;]) < 1e-3
+            @test norm(hdss(Σ) - hdss(Σphr))^2 ≈ 19 + 81/4 * (160/169)^2 - 2 * 3240/169 * (160/169) atol = 1e-3
+
+            Σphr = matchnrg(Σ, Σr; solver=Clarabel.Optimizer)
+            @test norm(Σphr.Q - [160/169;;]) < 1e-3
+            @test norm(hdss(Σ) - hdss(Σphr))^2 ≈ 19 + 81/4 * (160/169)^2 - 2 * 3240/169 * (160/169) atol = 1e-3
+
+            Σphr = PortHamiltonianModelReduction.matchnrg(Σ, Σr; solver=nothing)
+            @test Σphr.Q ≈ kypmin(Σr)
+        end
+        
+        @testset "matchnrg_sdp" begin 
+            Σphr = PortHamiltonianModelReduction.matchnrg_sdp(hdss(Σ), ss(Σr))
+            @test norm(Σphr.Q - [160/169;;]) < 1e-3
+            @test norm(hdss(Σ) - hdss(Σphr))^2 ≈ 19 + 81/4 * (160/169)^2 - 2 * 3240/169 * (160/169) atol = 1e-3
         end
     end
 

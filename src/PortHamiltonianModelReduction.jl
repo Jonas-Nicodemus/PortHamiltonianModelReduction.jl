@@ -2,8 +2,10 @@ module PortHamiltonianModelReduction
 
 using LinearAlgebra, SkewLinearAlgebra, VectorizationTransformations
 using ControlSystemsBase, MatrixEquations
-using NLSolversBase, Optim, LineSearches, JuMP, Hypatia, COSMO
+using NLSolversBase, Optim, LineSearches, JuMP, Clarabel
 using PortHamiltonianSystems, QuadraticOutputSystems
+
+import MathOptInterface as MOI
 
 export tddata
 export opinf, pgopinf, pod, podg, podpg, opinf_datamatrices, phdmd, estimate_ham, phdmd_initial_guess, phdmd_datamatrices

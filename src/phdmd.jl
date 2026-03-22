@@ -95,18 +95,17 @@ function phdmd(data::TimeDomainData, Q::AbstractMatrix; kwargs...)
 end
 
 """
-    Σph = phdmd_sdp(data::TimeDomainData; kwargs...)
-    Σph = phdmd_sdp(data::TimeDomainData, Q::AbstractMatrix; kwargs...)
+    Σph = phdmd_sdp(data::TimeDomainData; optimizer=Clarabel.Optimizer, kwargs...)
+    Σph = phdmd_sdp(data::TimeDomainData, Q::AbstractMatrix; optimizer=Clarabel.Optimizer, kwargs...)
 
 Computes a pH system `Σph` that approximates given time-domain `data` using semidefinite programming.
 Either the Hessian of the Hamiltonian `Q` is provided or also learned from the data.
 """
-function phdmd_sdp(data::TimeDomainData; kwargs...)
+function phdmd_sdp(data::TimeDomainData; optimizer=Clarabel.Optimizer, kwargs...)
     n = size(data.X, 1)
     m = size(data.U, 1)
 
-    solver = Hypatia
-    model = Model(solver.Optimizer)
+    model = Model(optimizer)
     for kwarg in keys(kwargs)
         set_optimizer_attribute(model, String(kwarg), kwargs[kwarg])
     end
@@ -122,17 +121,16 @@ function phdmd_sdp(data::TimeDomainData; kwargs...)
     return phss(value.(Γ), value.(W), inv(value.(H))), model
 end
 
-function phdmd_sdp(data::TimeDomainData, Q::AbstractMatrix; kwargs...)
+function phdmd_sdp(data::TimeDomainData, Q::AbstractMatrix; optimizer=Clarabel.Optimizer, kwargs...)
     Γ, W, model = phdmd_sdp(phdmd_datamatrices(data, Q)...; kwargs...)
 
     return phss(Γ, W, Q), model
 end
 
-function phdmd_sdp(T, Z; kwargs...)
+function phdmd_sdp(T::AbstractMatrix, Z::AbstractMatrix; optimizer=Clarabel.Optimizer, kwargs...)
     n = size(T, 1)
 
-    solver = Hypatia
-    model = Model(solver.Optimizer)
+    model = Model(optimizer)
     for kwarg in keys(kwargs)
         set_optimizer_attribute(model, String(kwarg), kwargs[kwarg])
     end

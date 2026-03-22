@@ -14,32 +14,37 @@ function hdss(Σph::PortHamiltonianStateSpace)
 end
 
 """
-    Σrem = matchnrg(Σ::PortHamiltonianStateSpace, Σr::PortHamiltonianStateSpace; solver=:BFGS, kwargs...)
+    Σrem = matchnrg(Σ::PortHamiltonianStateSpace, Σr::PortHamiltonianStateSpace; solver=Optim.BFGS(linesearch = LineSearches.BackTracking()), kwargs...)
 
 Applies energy matching [HNSU25](@cite) to the ROM `Σr` to match the Hamiltonian dynamics of the original system `Σ`. 
-If solver is `:Hypatia` or `:COSMO`, it uses semidefinite programming with the specified optimizer. 
-If solver is `:BFGS`, it uses the barrier method with BFGS optimization. 
-If solver is `:ARE`, the best solution of the ARE is returned.
+If solver is:
+    - an SDP solver like `Clarabel.Optimizer`, it uses semidefinite programming with the specified optimizer.
+        See [JuMP supported solvers](https://jump.dev/JuMP.jl/stable/installation/#Supported-solvers) for a list of available solvers.
+        Keep in mind that the solver needs to support SDPs, e.g. Clarabel, Hypatia, etc.
+
+    - of type `Optim.FirstOrderOptimizer`, it uses the barrier method with first order optimization. 
+    - `nothing`, the best solution of the ARE is returned.
+
+The `kwargs` are passed to the respective solvers.
 """
-function matchnrg(Σ::PortHamiltonianStateSpace, Σr::PortHamiltonianStateSpace; solver=:BFGS, kwargs...)
+function matchnrg(Σ::PortHamiltonianStateSpace, Σr::PortHamiltonianStateSpace; solver=Optim.BFGS(linesearch = LineSearches.BackTracking()), kwargs...)
     Σqo = hdss(Σ)
-
-    if solver == :Hypatia
-        Σrem = matchnrg_sdp(Σqo, ss(Σr), Hypatia.Optimizer; kwargs...)
-    elseif solver == :COSMO
-        Σrem = matchnrg_sdp(Σqo, ss(Σr), COSMO.Optimizer; max_iter=100000, eps_abs=1e-7, eps_rel=1e-7, kwargs...)
-    elseif solver == :BFGS
-        Σrem = matchnrg_barrier(Σqo, ss(Σr); Σr0 = Σr, kwargs...)
-    elseif solver == :BR_BFGS
-        Σrem = matchnrg_barrier(Σqo, ss(Σr); kwargs...)
-    elseif solver == :ARE
-        Σrem = matchnrg_are(Σqo, ss(Σr); kwargs...)
-    else
-        error("Unknown solver $solver")
-    end
-
-    return Σrem
+    Σr = ss(Σr)
+    return _matchnrg(Σqo, Σr, solver)
 end
+
+function _matchnrg(Σqo::QuadraticOutputStateSpace, Σr::StateSpace, solver::Optim.FirstOrderOptimizer; kwargs...)
+    return matchnrg_barrier(Σqo, Σr; optimizer=solver, kwargs...) 
+end
+
+function _matchnrg(Σqo::QuadraticOutputStateSpace, Σr::StateSpace, solver::Type{<:MOI.AbstractOptimizer}; kwargs...)
+    return matchnrg_sdp(Σqo, Σr; optimizer=solver, kwargs...) 
+end
+
+function _matchnrg(Σqo::QuadraticOutputStateSpace, Σr::StateSpace, solver::Nothing; kwargs...)
+    return matchnrg_are(Σqo, Σr) 
+end
+
 
 """
     Σph = ephminreal(Σph::PortHamiltonianStateSpace; kwargs...)
@@ -76,11 +81,14 @@ function truncnc(Σph::PortHamiltonianStateSpace; ϵ=1e-12)
 end
 
 """
-    Σphr = matchnrg_sdp(Σ::QuadraticOutputStateSpace, Σr::StateSpace; optimizer=COSMO.Optimizer, ε=1e-8, kwargs...)
+    Σphr = matchnrg_sdp(Σ::QuadraticOutputStateSpace, Σr::StateSpace; optimizer=Clarabel.Optimizer, ε=1e-8, kwargs...)
 
 Solves the energy matching problem using semidefinite programming.
+The optimizer can be specified via the `optimizer` keyword, and additional keyword arguments are passed to the optimizer.
+See [JuMP supported solvers](https://jump.dev/JuMP.jl/stable/installation/#Supported-solvers) for a list of available solvers.
+Note that the solver needs to support SDPs, e.g. Clarabel, Hypatia, etc.
 """
-function matchnrg_sdp(Σ::QuadraticOutputStateSpace, Σr::StateSpace, optimizer=Hypatia.Optimizer; ε=1e-8, kwargs...)
+function matchnrg_sdp(Σ::QuadraticOutputStateSpace, Σr::StateSpace; optimizer=Clarabel.Optimizer, ε=1e-8, kwargs...)
     r = Σr.nx
 
     # Precompute
@@ -112,7 +120,8 @@ end
 
 Solves the energy matching problem using the barrier method.
 """
-function matchnrg_barrier(Σ::QuadraticOutputStateSpace, Σr::StateSpace; Σr0=nothing, kwargs...)
+function matchnrg_barrier(Σ::QuadraticOutputStateSpace, Σr::StateSpace; Σr0=nothing, 
+    optimizer=Optim.BFGS(linesearch = LineSearches.BackTracking()), kwargs...)
 
     if Σr0 === nothing
         Σr0 = matchnrg_are(Σ, Σr)
@@ -139,7 +148,7 @@ function matchnrg_barrier(Σ::QuadraticOutputStateSpace, Σr::StateSpace; Σr0=n
             g .= go(x) + α * gc(x)
         end
         
-        res = Optim.optimize(f, g!, x, Optim.BFGS(linesearch = LineSearches.BackTracking()),
+        res = Optim.optimize(f, g!, x, optimizer,
             Optim.Options(
                 g_abstol = 1e-16,
                 allow_f_increases = true,
@@ -226,11 +235,11 @@ function constraint(Σr::StateSpace; eps=1e-8)
 end
 
 """
-    Σphr = matchnrg_are(Σ::QuadraticOutputStateSpace, Σr::StateSpace; kwargs...)
+    Σphr = matchnrg_are(Σ::QuadraticOutputStateSpace, Σr::StateSpace)
     
 Solves the energy matching problem where the solution set is replaced with solutions of the ARE.
 """
-function matchnrg_are(Σ::QuadraticOutputStateSpace, Σr::StateSpace; kwargs...)
+function matchnrg_are(Σ::QuadraticOutputStateSpace, Σr::StateSpace)
     Xmin = kypmin(Σr)
     Xmax = kypmax(Σr)
     

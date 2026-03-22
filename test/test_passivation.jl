@@ -31,8 +31,8 @@ using PortHamiltonianSystems
 
             Σpref, model = PortHamiltonianModelReduction.passivate_lmi(Σ)
             X = value.(object_dictionary(model)[:X])
-            @test norm(Σp.C - Σpref.C) < 1e-6
-            @test norm(W - kypmat(Σpref, X)) < 1e-6
+            @test norm(Σp.C - Σpref.C) < 1e-4
+            @test norm(W - kypmat(Σpref, X)) < 1e-4
         end
     end
 

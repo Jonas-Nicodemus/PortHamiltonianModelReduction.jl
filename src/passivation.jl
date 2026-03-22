@@ -246,7 +246,7 @@ end
 
 Solves the passivation problem for a given state-space system `Σ` using the positive real LMI constraints with trace parametrization [Dum02, CPS04](@cite).
 """
-function passivate_lmi_tp(Σ::StateSpace; kwargs...)
+function passivate_lmi_tp(Σ::StateSpace; optimizer=Clarabel.Optimizer, kwargs...)
     # Dimensions
     n = Σ.nx
     m = Σ.nu
@@ -261,7 +261,7 @@ function passivate_lmi_tp(Σ::StateSpace; kwargs...)
     end
 
     # Passivity Enforcement
-    model = Model(Hypatia.Optimizer)
+    model = Model(optimizer)
     for kwarg in keys(kwargs)
         set_optimizer_attribute(model, String(kwarg), kwargs[kwarg])
     end
@@ -288,7 +288,7 @@ end
 
 Solves the passivation problem for a given state-space system `Σ` using the positive real LMI constraints [GS21](@cite).
 """
-function passivate_lmi(Σ::StateSpace; kwargs...)
+function passivate_lmi(Σ::StateSpace; optimizer=Clarabel.Optimizer, kwargs...)
     # Dimensions
     n = Σ.nx
     m = Σ.nu
@@ -297,7 +297,7 @@ function passivate_lmi(Σ::StateSpace; kwargs...)
     Wc = gram(Σ, :c)
     Qc = cholesky(Wc).U
     
-    model = Model(Hypatia.Optimizer)
+    model = Model(optimizer)
     for kwarg in keys(kwargs)
         set_optimizer_attribute(model, String(kwarg), kwargs[kwarg])
     end
