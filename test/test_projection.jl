@@ -20,12 +20,18 @@ using PortHamiltonianSystems
     r = size(V, 2)
 
     @testset "pgprojection" begin
-        Σphr = pgprojection(Σph, V)
+        # Galerkin projection
+        Σr = pgprojection(Σ, V)
+        @test size(Σr.A) == (r,r)
+
+        # Petrov-Galerkin projection
+        W = Σph.Q * V / (V' * Σph.Q * V)
+        Σphr = pgprojection(Σph, V, W)
         @test size(Σphr.J) == (r,r)
         @test isposdef(Σphr.R) 
         @test isposdef(Σphr.Q)
 
-        Σr = pgprojection(Σ, V)
-        @test size(Σr.A) == (r,r)
+        Σr2 = pgprojection(Σ, V, W)
+        @test norm(Σr2.A - (Σphr.J - Σphr.R) * Σphr.Q) < 1e-10
     end
 end

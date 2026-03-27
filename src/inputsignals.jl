@@ -4,7 +4,7 @@
 Generates a chirp signal with amplitude `A`, starting frequency `f0`, ending frequency `f1`, period duration `T`, and time span `tspan`.
 """
 function chirp(A::Float64=1.0, f0::Float64=1e-2, f1::Float64=1e1, T::Float64=2.0, tspan::Tuple=(0.0, Inf))
-    return (x,t) -> t .< tspan[2] && t .> tspan[1] ? A * sin(2π * ((f1 - f0) / (2T) * t^2 + f0 * t)) : 0.0
+    return (x,t) -> t .< tspan[2] && t .> tspan[1] ? A * sin(2π * ((f1 - f0) / (2T) * (t-tspan[1])^2 + f0 * (t-tspan[1]))) : 0.0
 end
 
 """
