@@ -170,7 +170,7 @@ function estimate_ham(X::AbstractMatrix, H::AbstractVector; kwargs...)
     if !isposdef(Qr)
         # @warn "Qr is not positive definite, projecting to nearest psd matrix"
         # Qr = project_psd(Qr; eigtol=1e-8)
-        @warn "Qr is not positive definite, try sdp"
+        @warn "Qr is not positive definite, try sdp ..."
         return estimate_ham_sdp(X, H; kwargs...)
     end
     err = norm(XXr * vech(Qr) - H)
@@ -178,9 +178,9 @@ function estimate_ham(X::AbstractMatrix, H::AbstractVector; kwargs...)
     return Qr, err
 end
 
-function estimate_ham_sdp(X::AbstractMatrix, H::AbstractVector; kwargs...)
+function estimate_ham_sdp(X::AbstractMatrix, H::AbstractVector; optimizer=Clarabel.Optimizer, kwargs...)
     n, N = size(X)
-    model = Model(Hypatia.Optimizer)
+    model = Model(optimizer)
     for kwarg in keys(kwargs)
         set_optimizer_attribute(model, String(kwarg), kwargs[kwarg])
     end

@@ -88,7 +88,12 @@ using PortHamiltonianSystems
 
     @testset "estimate_ham" begin
         Qr, err = estimate_ham(data.X, H)
+        @test isposdef(Qr)
         @test norm(Qr - Q) < 1e-8  
+
+        Qr, err = PortHamiltonianModelReduction.estimate_ham_sdp(data.X, H)
+        @test isposdef(Qr)
+        @test norm(Qr - Q) < 1e-8
     end
 
     @testset "phdmd_init" begin
