@@ -17,12 +17,13 @@ end
     Σrem = matchnrg(Σ::PortHamiltonianStateSpace, Σr::Union{StateSpace,PortHamiltonianStateSpace}; solver=Optim.BFGS(linesearch = LineSearches.BackTracking()), kwargs...)
 
 Applies energy matching [HNSU25](@cite) to the ROM `Σr` to match the Hamiltonian dynamics of the original system `Σ`. 
+
 If solver is:
-    - an SDP solver like `Clarabel.Optimizer`, it uses semidefinite programming with the specified optimizer.
-        See [JuMP supported solvers](https://jump.dev/JuMP.jl/stable/installation/#Supported-solvers) for a list of available solvers.
-        Keep in mind that the solver needs to support SDPs, e.g. Clarabel, Hypatia, etc.
-    - a first order optimizer (`Optim.FirstOrderOptimizer`), it uses the barrier method with first order optimization. 
-    - `nothing`, the best solution of the ARE is returned.
+- an SDP solver like `Clarabel.Optimizer`, it uses semidefinite programming with the specified optimizer.
+    See [JuMP supported solvers](https://jump.dev/JuMP.jl/stable/installation/#Supported-solvers) for a list of available solvers.
+    Keep in mind that the solver needs to support SDPs, e.g. Clarabel, Hypatia, etc.
+- a first order optimizer (`Optim.FirstOrderOptimizer`), it uses the barrier method with first order optimization. 
+- `nothing`, the best solution of the ARE is returned.
 
 The `kwargs` are passed to the respective solvers.
 """
