@@ -14,37 +14,44 @@ function hdss(Σph::PortHamiltonianStateSpace)
 end
 
 """
-    Σrem = matchnrg(Σ::PortHamiltonianStateSpace, Σr::PortHamiltonianStateSpace; solver=Optim.BFGS(linesearch = LineSearches.BackTracking()), kwargs...)
+    Σrem = matchnrg(Σ::PortHamiltonianStateSpace, Σr::Union{StateSpace,PortHamiltonianStateSpace}; solver=Optim.BFGS(linesearch = LineSearches.BackTracking()), kwargs...)
 
 Applies energy matching [HNSU25](@cite) to the ROM `Σr` to match the Hamiltonian dynamics of the original system `Σ`. 
 If solver is:
     - an SDP solver like `Clarabel.Optimizer`, it uses semidefinite programming with the specified optimizer.
         See [JuMP supported solvers](https://jump.dev/JuMP.jl/stable/installation/#Supported-solvers) for a list of available solvers.
         Keep in mind that the solver needs to support SDPs, e.g. Clarabel, Hypatia, etc.
-
-    - of type `Optim.FirstOrderOptimizer`, it uses the barrier method with first order optimization. 
+    - a first order optimizer (`Optim.FirstOrderOptimizer`), it uses the barrier method with first order optimization. 
     - `nothing`, the best solution of the ARE is returned.
 
 The `kwargs` are passed to the respective solvers.
 """
-function matchnrg(Σ::PortHamiltonianStateSpace, Σr::PortHamiltonianStateSpace; solver=Optim.BFGS(linesearch = LineSearches.BackTracking()), kwargs...)
+function matchnrg(Σ::PortHamiltonianStateSpace, Σr::Union{StateSpace,PortHamiltonianStateSpace}; solver=Optim.BFGS(linesearch = LineSearches.BackTracking()), kwargs...)
     Σqo = hdss(Σ)
-    Σr = ss(Σr)
-    return _matchnrg(Σqo, Σr, solver)
+    return _matchnrg(Σqo, Σr, solver; kwargs...)
 end
 
 function _matchnrg(Σqo::QuadraticOutputStateSpace, Σr::StateSpace, solver::Optim.FirstOrderOptimizer; kwargs...)
     return matchnrg_barrier(Σqo, Σr; optimizer=solver, kwargs...) 
 end
 
-function _matchnrg(Σqo::QuadraticOutputStateSpace, Σr::StateSpace, solver::Type{<:MOI.AbstractOptimizer}; kwargs...)
+function _matchnrg(Σqo::QuadraticOutputStateSpace, Σr::PortHamiltonianStateSpace, solver::Optim.FirstOrderOptimizer; kwargs...)
+    return matchnrg_barrier(Σqo, ss(Σr), Σr.Q; optimizer=solver, kwargs...) 
+end
+
+function _matchnrg(Σqo::QuadraticOutputStateSpace, Σr::Union{StateSpace,PortHamiltonianStateSpace}, solver::Type{<:MOI.AbstractOptimizer}; kwargs...)
+    if isa(Σr, PortHamiltonianStateSpace)
+        Σr = ss(Σr)
+    end
     return matchnrg_sdp(Σqo, Σr; optimizer=solver, kwargs...) 
 end
 
-function _matchnrg(Σqo::QuadraticOutputStateSpace, Σr::StateSpace, solver::Nothing; kwargs...)
+function _matchnrg(Σqo::QuadraticOutputStateSpace, Σr::Union{StateSpace,PortHamiltonianStateSpace}, solver::Nothing; kwargs...)
+    if isa(Σr, PortHamiltonianStateSpace)
+        Σr = ss(Σr)
+    end
     return matchnrg_are(Σqo, Σr) 
 end
-
 
 """
     Σph = ephminreal(Σph::PortHamiltonianStateSpace; kwargs...)
@@ -116,21 +123,23 @@ function matchnrg_sdp(Σ::QuadraticOutputStateSpace, Σr::StateSpace; optimizer=
 end
 
 """
-    Σph = matchnrg_barrier(Σ, Σr; Σr0=nothing, kwargs...)
+    Σph = matchnrg_barrier(Σ::QuadraticOutputStateSpace, Σr::PortHamiltonianStateSpace; optimizer=Optim.BFGS(linesearch = LineSearches.BackTracking()), kwargs...)
+    Σph = matchnrg_barrier(Σ::QuadraticOutputStateSpace, Σr::StateSpace, Q0::AbstractMatrix; optimizer=Optim.BFGS(linesearch = LineSearches.BackTracking()), kwargs...)
 
 Solves the energy matching problem using the barrier method.
 """
-function matchnrg_barrier(Σ::QuadraticOutputStateSpace, Σr::StateSpace; Σr0=nothing, 
+function matchnrg_barrier(Σ::QuadraticOutputStateSpace, Σr::PortHamiltonianStateSpace; 
+    optimizer=Optim.BFGS(linesearch = LineSearches.BackTracking()), kwargs...)
+    return matchnrg_barrier(Σ, ss(Σr), Σr.Q; optimizer=optimizer, kwargs...)
+end
+
+function matchnrg_barrier(Σ::QuadraticOutputStateSpace, Σr::StateSpace, Q0::AbstractMatrix; 
     optimizer=Optim.BFGS(linesearch = LineSearches.BackTracking()), kwargs...)
 
-    if Σr0 === nothing
-        Σr0 = matchnrg_are(Σ, Σr)
-    end
-    
-    x = 1//2 * vech(Σr0.Q)
-
+    x = 1//2 * vech(Q0)
     eps=1e-8
-    W = kypmat(Σr, Σr0.Q)
+
+    W = kypmat(Σr, Q0)
     λ = minimum(eigvals(W))
     if λ < 0.0
         eps = -λ + 1e-8

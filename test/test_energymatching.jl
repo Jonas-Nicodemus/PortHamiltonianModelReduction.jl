@@ -99,14 +99,14 @@ using Optim, LineSearches, Clarabel
         end
     
         @testset "matchnrg_barrier" begin
-            Σphr = PortHamiltonianModelReduction.matchnrg_barrier(Σ, Σr)
+            Σr0 = phss(Σr)
+            Σphr = PortHamiltonianModelReduction.matchnrg_barrier(Σ, Σr0)
             @test Σphr.Q ≈ [160/169;;]
             @test norm(Σ - hdss(Σphr))^2 ≈ 19 + 81/4 * (160/169)^2 - 2 * 3240/169 * (160/169) 
-    
-            Σr = ss(A, B, C, D)
-            Σr0 = phss(Σr)
-            Σphr = PortHamiltonianModelReduction.matchnrg_barrier(Σ, Σr; Σr0=Σr0)
-            @test norm(Σphr.Q - 2*unvec(M)) < 1e-6
+           
+            Σphr = PortHamiltonianModelReduction.matchnrg_barrier(Σ, Σr, Σr0.Q)
+            @test Σphr.Q ≈ [160/169;;]
+            @test norm(Σ - hdss(Σphr))^2 ≈ 19 + 81/4 * (160/169)^2 - 2 * 3240/169 * (160/169)
         end
     end
 
@@ -118,10 +118,12 @@ using Optim, LineSearches, Clarabel
         Q = [1. 0.; 0. 1.]
         
         Σ = phss(ss(A, B, C, D), Q)
-        Σr = phss(ss(A[1:1,1:1], B[1:1,1:1], C[1:1,1:1], D), Q[1:1,1:1]) 
+        Σr = ss(A[1:1,1:1], B[1:1,1:1], C[1:1,1:1], D)
+        Σphr = phss(Σr, Q[1:1,1:1]) 
+        
 
         @testset "matchnrg" begin
-            Σphr = matchnrg(Σ, Σr; solver=Optim.BFGS(linesearch = LineSearches.BackTracking()))
+            Σphr = matchnrg(Σ, Σphr; solver=Optim.BFGS(linesearch = LineSearches.BackTracking()))
             @test norm(Σphr.Q - [160/169;;]) < 1e-3
             @test norm(hdss(Σ) - hdss(Σphr))^2 ≈ 19 + 81/4 * (160/169)^2 - 2 * 3240/169 * (160/169) atol = 1e-3
 
