@@ -1,6 +1,6 @@
 name = "PortHamiltonianModelReduction"
 uuid = "b1e0afa7-a251-494f-bb10-70a9ac2e613c"
-version = "1.1.0"
+version = "1.2.0"
 authors = ["Jonas Nicodemus <jonas.nicodemus@icloud.com> and contributors"]
 
 [deps]
