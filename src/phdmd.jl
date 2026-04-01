@@ -95,8 +95,8 @@ function phdmd(data::TimeDomainData, Q::AbstractMatrix; kwargs...)
 end
 
 """
-    Σph = phdmd_sdp(data::TimeDomainData; optimizer=Clarabel.Optimizer, kwargs...)
-    Σph = phdmd_sdp(data::TimeDomainData, Q::AbstractMatrix; optimizer=Clarabel.Optimizer, kwargs...)
+    Σph, model = phdmd_sdp(data::TimeDomainData; optimizer=Clarabel.Optimizer, kwargs...)
+    Σph, model = phdmd_sdp(data::TimeDomainData, Q::AbstractMatrix; optimizer=Clarabel.Optimizer, kwargs...)
 
 Computes a pH system `Σph` that approximates given time-domain `data` using semidefinite programming.
 Either the Hessian of the Hamiltonian `Q` is provided or also learned from the data.
@@ -168,10 +168,9 @@ function estimate_ham(X::AbstractMatrix, H::AbstractVector; kwargs...)
     Qr = unvech(qr)
 
     if !isposdef(Qr)
-        # @warn "Qr is not positive definite, projecting to nearest psd matrix"
-        # Qr = project_psd(Qr; eigtol=1e-8)
-        @warn "Qr is not positive definite, try sdp ..."
-        return estimate_ham_sdp(X, H; kwargs...)
+        @warn "Qr is not positive definite with λmin = $(minimum(eigvals(Qr))), projecting to nearest psd matrix. 
+        Consider using the sdp-based estimation of the Hamiltonian for better results, see `estimate_ham_sdp`."
+        Qr = project_psd(Qr; eigtol=1e-8)
     end
     err = norm(XXr * vech(Qr) - H)
     
@@ -180,21 +179,22 @@ end
 
 function estimate_ham_sdp(X::AbstractMatrix, H::AbstractVector; optimizer=Clarabel.Optimizer, kwargs...)
     n, N = size(X)
+
+    # Precompute symmetric outer products (also only need upper triangle)
+    outer = [Symmetric(X[:, i] * X[:, i]') for i in 1:N]
+
     model = Model(optimizer)
     for kwarg in keys(kwargs)
         set_optimizer_attribute(model, String(kwarg), kwargs[kwarg])
     end
     Q = @variable(model, [1:n, 1:n], PSD)
-
-    x = zeros(AffExpr, N)
-    for i in 1:N
-        x[i] += 1//2 * X[:,i]' * Q * X[:,i] - H[i]
-    end
-    drop_zeros!.(x)
-
+    
+    # dot() on Symmetric matrices uses only upper triangle — avoids redundant ops
+    residuals = [0.5 * dot(outer[i], Q) - H[i] for i in 1:N]
+    
     @variable(model, t)
     @objective(model, Min, t)
-    @constraint(model, [t; vec(x)] in SecondOrderCone())
+    @constraint(model, [t; residuals] in SecondOrderCone())
     
     JuMP.optimize!(model)
     return value.(Q), JuMP.objective_value(model)
