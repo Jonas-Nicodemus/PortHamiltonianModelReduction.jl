@@ -112,17 +112,22 @@ function phdmd_sdp(data::TimeDomainData; optimizer=Clarabel.Optimizer, kwargs...
     @variable(model, W[1:n+m, 1:n+m] in PSDCone())
     @variable(model, Γ[1:n+m, 1:n+m] in SkewSymmetricMatrixSpace())
     @variable(model, H[1:n, 1:n] in PSDCone())
+    @variable(model, t)
+    @objective(model, Min, t)
+
+    T = [data.X; data.U]   
+    Z = @expression(model, [H * data.Ẋ; -data.Y])
+    Res = @expression(model, Z - (Γ - W) * T)
    
-    @variable(model, res)
-    @constraint(model, [res; vec([H*data.Ẋ; -data.Y] - (Γ-W)*[data.X; data.U])] in SecondOrderCone());
-    @objective(model, Min, res)
+    @constraint(model, [t; vec(Res)] in SecondOrderCone());
+
     JuMP.optimize!(model)
 
     return phss(value.(Γ), value.(W), inv(value.(H))), model
 end
 
 function phdmd_sdp(data::TimeDomainData, Q::AbstractMatrix; optimizer=Clarabel.Optimizer, kwargs...)
-    Γ, W, model = phdmd_sdp(phdmd_datamatrices(data, Q)...; kwargs...)
+    Γ, W, model = phdmd_sdp(phdmd_datamatrices(data, Q)...; optimizer=optimizer, kwargs...)
 
     return phss(Γ, W, Q), model
 end
@@ -136,10 +141,12 @@ function phdmd_sdp(T::AbstractMatrix, Z::AbstractMatrix; optimizer=Clarabel.Opti
     end
     @variable(model, W[1:n, 1:n] in PSDCone())
     @variable(model, Γ[1:n, 1:n] in SkewSymmetricMatrixSpace())
-   
-    @variable(model, res)
-    @constraint(model, [res; vec(Z - (Γ-W)*T)] in SecondOrderCone());
-    @objective(model, Min, res)
+    @variable(model, t)
+    @objective(model, Min, t)
+
+    Res = @expression(model, Z - (Γ - W) * T)
+    @constraint(model, [t; vec(Res)] in SecondOrderCone());
+
     JuMP.optimize!(model)
 
     return skewhermitian(value.(Γ)), hermitianpart(value.(W)), model
